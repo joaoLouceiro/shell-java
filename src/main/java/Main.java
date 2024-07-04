@@ -1,7 +1,11 @@
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Main {
@@ -10,7 +14,6 @@ public class Main {
   public static void main(String[] args) throws Exception {
 
     getDeclaredMethods();
-
     Scanner scanner = new Scanner(System.in);
     boolean isRunning = true;
     do {
@@ -35,16 +38,33 @@ public class Main {
     }
   }
 
+  private static boolean isInPath(String command) {
+    String[] pathEnv = System.getenv("PATH").split(":");
+    for (String p : pathEnv) {
+      String filePath = p + "/" + command;
+      Path path = Paths.get(filePath);
+      if (Files.exists(path)) {
+        System.out.printf("%s is %s\n", command, p);
+        return true;
+      }
+    }
+    return false;
+  }
+
   private static boolean type(String[] args) {
     if (args.length != 2) {
       return invalidArgument();
     }
-
     if (declaredMethods.contains(args[1])) {
       System.out.printf("%s is a shell builtin\n", args[1]);
-    } else {
-      System.out.printf("%s: not found\n", args[1]);
+      return true;
     }
+
+    if (isInPath(args[1])) {
+      return true;
+    }
+
+    System.out.printf("%s: not found\n", args[1]);
     return true;
   }
 
