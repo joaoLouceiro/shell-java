@@ -44,7 +44,7 @@ public class Main {
       String filePath = p + "/" + command;
       Path path = Paths.get(filePath);
       if (Files.exists(path)) {
-        System.out.printf("%s is %s\n", command, p);
+        System.out.printf("%s is %s\n", command, filePath);
         return true;
       }
     }
