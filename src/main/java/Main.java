@@ -22,8 +22,6 @@ import java.util.function.Consumer;
 public class Main {
   static List<String> declaredMethods = new ArrayList<>();
   static String filePath = "";
-  static ProcessBuilder processBuilder = new ProcessBuilder();
-  static ExecutorService executorService = Executors.newFixedThreadPool(10);
 
   public static void main(String[] args) throws Exception {
 
@@ -50,8 +48,7 @@ public class Main {
         return type(args);
       default:
         if (programExists(args[0])) {
-          return run(args);
-          // return runExternalProgram(args);
+          return ExternalRunner.run(args);
         }
         return notFound(args[0]);
     }
@@ -69,47 +66,6 @@ public class Main {
     }
     return false;
   }
-
-  private static boolean run(String[] args) {
-    ProcessBuilder builder = new ProcessBuilder();
-    builder.command(args);
-    // builder.directory(new File(System.getProperty("user.home")));
-    Process process;
-    try {
-      process = builder.start();
-      StreamGobbler streamGobbler = new StreamGobbler(process.getInputStream(), System.out::println);
-      Future<?> future = executorService.submit(streamGobbler);
-      process.waitFor();
-      process.exitValue();
-      future.get(10, TimeUnit.SECONDS);
-
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (TimeoutException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-    return true;
-  }
-
-  // private static boolean runExternalProgram(String[] args) {
-  // try {
-  //
-  // Process p = Runtime.getRuntime().exec(args);
-  // System.out.println(exitCode);
-  // } catch (IOException e) {
-  // System.err.println("Something went wrong");
-  // e.printStackTrace();
-  // }
-  // return true;
-  // }
 
   private static boolean type(String[] args) {
     if (args.length != 2) {
@@ -162,19 +118,4 @@ public class Main {
     declaredMethods.remove("invalidArgument");
   }
 
-  private static class StreamGobbler implements Runnable {
-    private InputStream inputStream;
-    private Consumer<String> consumer;
-
-    public StreamGobbler(InputStream inputStream, Consumer<String> consumer) {
-      this.inputStream = inputStream;
-      this.consumer = consumer;
-    }
-
-    @Override
-    public void run() {
-      new BufferedReader(new InputStreamReader(inputStream)).lines()
-          .forEach(consumer);
-    }
-  }
 }
