@@ -1,4 +1,8 @@
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -7,10 +11,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 public class Main {
   static List<String> declaredMethods = new ArrayList<>();
   static String filePath = "";
+  static ProcessBuilder processBuilder = new ProcessBuilder();
+  static ExecutorService executorService = Executors.newFixedThreadPool(10);
 
   public static void main(String[] args) throws Exception {
 
@@ -37,7 +50,8 @@ public class Main {
         return type(args);
       default:
         if (programExists(args[0])) {
-          return runExternalProgram(args);
+          return run(args);
+          // return runExternalProgram(args);
         }
         return notFound(args[0]);
     }
@@ -56,15 +70,46 @@ public class Main {
     return false;
   }
 
-  private static boolean runExternalProgram(String[] args) {
+  private static boolean run(String[] args) {
+    ProcessBuilder builder = new ProcessBuilder();
+    builder.command(args);
+    // builder.directory(new File(System.getProperty("user.home")));
+    Process process;
     try {
-      Runtime.getRuntime().exec(args);
+      process = builder.start();
+      StreamGobbler streamGobbler = new StreamGobbler(process.getInputStream(), System.out::println);
+      Future<?> future = executorService.submit(streamGobbler);
+      process.waitFor();
+      process.exitValue();
+      future.get(10, TimeUnit.SECONDS);
+
     } catch (IOException e) {
-      System.err.println("Something went wrong");
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (TimeoutException e) {
+      // TODO Auto-generated catch block
       e.printStackTrace();
     }
     return true;
   }
+
+  // private static boolean runExternalProgram(String[] args) {
+  // try {
+  //
+  // Process p = Runtime.getRuntime().exec(args);
+  // System.out.println(exitCode);
+  // } catch (IOException e) {
+  // System.err.println("Something went wrong");
+  // e.printStackTrace();
+  // }
+  // return true;
+  // }
 
   private static boolean type(String[] args) {
     if (args.length != 2) {
@@ -115,5 +160,21 @@ public class Main {
     declaredMethods.remove("main");
     declaredMethods.remove("notFound");
     declaredMethods.remove("invalidArgument");
+  }
+
+  private static class StreamGobbler implements Runnable {
+    private InputStream inputStream;
+    private Consumer<String> consumer;
+
+    public StreamGobbler(InputStream inputStream, Consumer<String> consumer) {
+      this.inputStream = inputStream;
+      this.consumer = consumer;
+    }
+
+    @Override
+    public void run() {
+      new BufferedReader(new InputStreamReader(inputStream)).lines()
+          .forEach(consumer);
+    }
   }
 }
