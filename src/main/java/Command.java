@@ -66,12 +66,12 @@ public class Command {
     }
 
     Path path = Paths.get(args[1]);
-    if (Files.isDirectory(path)) {
-      // System.out.println(path.toAbsolutePath().toString());
-      System.setProperty("user.dir", path.toAbsolutePath().toString());
-    } else {
+    if (!Files.isDirectory(path)) {
       System.out.printf("%s: No such file or directory\n", args[1]);
+      return true;
     }
+
+    System.setProperty("user.dir", path.toAbsolutePath().normalize().toString());
     return true;
   }
 
