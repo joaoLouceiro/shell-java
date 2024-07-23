@@ -68,10 +68,14 @@ public class Command {
       return invalidArgument();
     }
 
+    if (args[1].equals("~")) {
+      Path path = Paths.get(System.getProperty("user.home"));
+      return setShellCwd(path);
+    }
+
     try {
       Path path = Shell.getCwd().resolve(args[1]).toRealPath().normalize();
-      Shell.setCwd(path);
-      System.setProperty("user.dir", path.toString());
+      return setShellCwd(path);
 
     } catch (NoSuchFileException e) {
       System.out.printf("%s: No such file or directory\n", args[1]);
@@ -80,6 +84,12 @@ public class Command {
       e.printStackTrace();
     }
 
+    return true;
+  }
+
+  private static boolean setShellCwd(Path path) {
+    Shell.setCwd(path);
+    System.setProperty("user.dir", path.toString());
     return true;
   }
 
