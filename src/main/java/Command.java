@@ -69,7 +69,7 @@ public class Command {
     }
 
     if (args[1].equals("~")) {
-      Path path = Paths.get(System.getProperty("user.home"));
+      Path path = Paths.get(System.getenv("HOME"));
       return setShellCwd(path);
     }
 
