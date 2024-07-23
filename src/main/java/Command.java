@@ -1,4 +1,6 @@
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -65,13 +67,20 @@ public class Command {
       return invalidArgument();
     }
 
-    Path path = Paths.get(args[1]);
-    if (!Files.isDirectory(path)) {
-      System.out.printf("%s: No such file or directory\n", args[1]);
-      return true;
+    Path path;
+    try {
+      path = Shell.getCwd().resolve(args[1]).toRealPath().normalize();
+      if (!Files.isDirectory(path)) {
+        System.out.printf("%s: No such file or directory\n", args[1]);
+        return true;
+      }
+
+      Shell.setCwd(path);
+      System.setProperty("user.dir", path.toString());
+    } catch (IOException e) {
+      e.printStackTrace();
     }
 
-    System.setProperty("user.dir", path.toAbsolutePath().normalize().toString());
     return true;
   }
 
